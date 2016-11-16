@@ -1,6 +1,6 @@
 ---
 title: "MATH 216 Homework 4"
-author: "WRITE YOUR NAME HERE"
+author: "Emily Goins"
 output:
   html_document:
     toc: true
@@ -16,6 +16,9 @@ library(USAboundaries)
 library(maptools)
 library(sp)
 library(broom)
+library(dplyr)
+
+
 ```
 
 
@@ -24,10 +27,10 @@ library(broom)
 
 Please indicate
 
-* Who you collaborated with:
-* Roughly how much time you spent on this HW so far:
+* Who you collaborated with: Alden Cowap
+* Roughly how much time you spent on this HW so far: 4
 * The URL of the RPubs published URL [here](https://www.nhl.com/).
-* What gave you the most trouble:
+* What gave you the most trouble: Figuring out how to join all of the maps
 * Any comments you have:
 
 
@@ -44,14 +47,46 @@ which is marked on the map with a large red dot.
 ```{r, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8, fig.height=4.5}
 # Perform your computations here:
 
+county <- us_counties()
+county_data <- county@data %>%
+    mutate("id" = 1:3220)
+county_polygon <- tidy(county, region="geoid")
+
+centroids <- (coordinates(county)) %>%
+  tbl_df() %>%
+  rename("center_long" = V1) %>%
+  rename("center_lat" = V2) %>%
+  mutate("id" = 1:3220)
+
+countydata_centroids <- left_join(county_data, centroids, by = "id")
+
+counties <- left_join(county_polygon, countydata_centroids, by=c("id"="geoid")) %>%
+  filter(!state_name %in% c("Alaska", "Hawaii", "Puerto Rico"))
+
+census_data <- read_csv("countydata.csv") %>%
+  select(Geo_FIPS, SE_T001_001) %>%
+  rename("population" = SE_T001_001) %>%
+  rename("FIPS" = Geo_FIPS)
+
+counties_census <- left_join(counties, census_data, by = c("id" = "FIPS")) %>%
+  mutate(density = population/as.numeric(aland)) %>%
+  mutate(distance = sqrt(long^2 + lat^2))
+
+hub_y_coord <- sum(counties_census$density*counties_census$lat, na.rm=TRUE)/sum(counties_census$density, na.rm=TRUE)
+
+hub_x_coord <- sum(counties_census$density*counties_census$long, na.rm=TRUE)/sum(counties_census$density, na.rm=TRUE)
+
+counties_census <- left_join(counties, census_data, by = c("id" = "FIPS")) %>%
+  mutate(distance = sqrt((hub_x_coord - long)^2 + (hub_y_coord - lat)^2))
+
 ```
 
 
-```{r, eval=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8, fig.height=4.5}
+```{r, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8, fig.height=4.5}
 # Here is a template of a ggplot call; feel free to change this to suit your
 # needs. Once your computations above are complete, set the eval=TRUE on the
 # line above to tell R Markdown to run this code block.
-ggplot(data=geo_data, aes(x=long, y=lat, group=group, fill=distance)) +
+ggplot(data=counties_census, aes(x=long, y=lat, group=group, fill=distance)) +
   # Plot choropleth polygons, low -> high being colored white -> dark green
   geom_polygon() +
   scale_fill_gradient(low="white", high="darkgreen") + 

@@ -31,7 +31,7 @@ Please indicate
 * Roughly how much time you spent on this HW so far: 4
 * The URL of the RPubs published URL [http://rpubs.com/egoins/hw4](https://www.nhl.com/).
 * What gave you the most trouble: Figuring out how to join all of the maps
-* Any comments you have:
+* Any comments you have: I used population density instead of population because that made more sense to me, but I understand that both could be used.
 
 
 

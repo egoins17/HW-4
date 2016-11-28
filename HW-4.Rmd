@@ -66,15 +66,19 @@ counties <- left_join(county_polygon, countydata_centroids, by=c("id"="geoid")) 
 census_data <- read_csv("countydata.csv") %>%
   select(Geo_FIPS, SE_T001_001) %>%
   rename("population" = SE_T001_001) %>%
-  rename("FIPS" = Geo_FIPS)
+  rename("FIPS" = Geo_FIPS) 
+
 
 counties_census <- left_join(counties, census_data, by = c("id" = "FIPS")) %>%
-  mutate(density = population/as.numeric(aland)) %>%
   mutate(distance = sqrt(long^2 + lat^2))
 
-hub_y_coord <- sum(counties_census$density*counties_census$lat, na.rm=TRUE)/sum(counties_census$density, na.rm=TRUE)
+pop_lat <- as.numeric(counties_census$population*counties_census$lat) 
+pop_long <- as.numeric(counties_census$population*counties_census$long)
+pop <- as.numeric(counties_census$population)
 
-hub_x_coord <- sum(counties_census$density*counties_census$long, na.rm=TRUE)/sum(counties_census$density, na.rm=TRUE)
+hub_y_coord <- sum(pop_lat, na.rm=TRUE)/sum(pop, na.rm=TRUE)
+
+hub_x_coord <- sum(pop_long, na.rm=TRUE)/sum(pop, na.rm=TRUE)
 
 counties_census <- left_join(counties, census_data, by = c("id" = "FIPS")) %>%
   mutate(distance = sqrt((hub_x_coord - long)^2 + (hub_y_coord - lat)^2))
